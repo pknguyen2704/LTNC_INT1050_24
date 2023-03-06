@@ -10,52 +10,35 @@ using namespace std;
 #define TEXT_GET_PLAYER_INDEX 3
 #define TEXT_SHOW_MAP 4
 #define TEXT_SHOW_OUTTRO 5
-#define TEXT_SELECT_DIFFICULTY 6
-#define TEXT_GAME_OVER 7
-#define TEXT_WIN 8
-
-#define MAX_LEVEL 3
-#define EASY_MODE 1
-#define MEDIUM_MODE 2
-#define EXTREME_MODE 3
-
-#define EASY_MODE_HEIGHT 8
-#define EASY_MODE_WIDTH 8
-#define EASY_MODE_MINES 10
-
-#define MEDIUM_MODE_HEIGHT 15
-#define MEDIUM_MODE_WIDTH 20
-#define MEDIUM_MODE_MINES 50
-
-#define EXTREME_MODE_HEIGHT 20
-#define EXTREME_MODE_WIDTH 25
-#define EXTREME_MODE_MINES 50
+#define TEXT_GAME_OVER 6
+#define TEXT_WIN 7
+#define TEXT_GET_PLAYER_MAP_SIZE 8
 
 
-int MAX_WIDTH = EXTREME_MODE_WIDTH;
-int MAX_HEIGHT = EXTREME_MODE_HEIGHT;
-int MINES = EXTREME_MODE_MINES;
-int MAX_MOVE = (MAX_WIDTH*MAX_HEIGHT)-MINES;
+#define MAX_HEIGHT 100000
+#define MAX_WIDTH 100000
+#define MAX_MINES 100000
 
 struct Index
 {
     int x;
     int y;
 };
+
 Index playerIndex;
 
 void ShowText(int text);
 bool ReplayOption();
 void ShowInstruction();
-void SelectDifficulty();
-bool CheckPlayerLevelSelection(int playerSelection);
-void SetDifficulty(int playerSelection);
-char** GenerateMap();
-void SetMap(char** Map);
-Index GetPlayerIndex(int** visited);
-void PlayMinesweeper(char** realMap, char** shownMap);
-void ShowMap(char** Map);
-bool InsideMap(int indexX, int indexY);
+void GetPlayerMapOption(int& mapHeight, int& mapWidth, int& mines);
+char** GenerateMap(int mapHeight, int mapWidth, int mines);
+void SetMap(char** tmpMap, int mapHeight, int mapWidth, int mines);
+Index GetPlayerIndex(int** visited, int mapHeight, int mapWidth);
+bool CheckPlayerLevelSelection(int mapHeight, int mapWidth, int mines);
+void PlayMinesweeper(char** realMap, char** shownMap, int mapHeight, int mapWidth, int maxMove);
+void ShowMap(char** MapTmp, int mapHeight, int mapWidth);
+bool InsideMap(int indexX, int indexY, int mapHeight, int mapWidth);
+bool checkPlayerIndex(int playerIndexX, int playerIndexY, int mapHeight, int mapWidth, int** visited);
 void ShowOuttro();
 
 int main()
@@ -64,16 +47,22 @@ int main()
     {
         //Clean screen to start a new game
         system("CLS");
-
         ShowInstruction();
-        SelectDifficulty();
 
-        char** realMap = GenerateMap();
-        char** shownMap = GenerateMap();
-        SetMap(realMap);
+        int m = MAX_HEIGHT;
+        int n = MAX_WIDTH;
+        int k = MAX_MINES;
+
+        GetPlayerMapOption(m, n, k);
+        int maxMove = m*n-k;
+        
+        char** realMap = GenerateMap(m,n,k);
+        char** shownMap = GenerateMap(m,n,k);
+        SetMap(realMap,m,n,k);
+
         //shownMap to check Map (only for Developer) =)))
-        //shownMap(realMap);
-        PlayMinesweeper(realMap, shownMap);
+        ShowMap(realMap, m, n);
+        PlayMinesweeper(realMap, shownMap, m, n, maxMove);
     }while(ReplayOption() == true);
     ShowOuttro();
     return 0;
@@ -97,19 +86,14 @@ void ShowText(int text)
     if(text == TEXT_GET_PLAYER_INDEX)
     {
         cout << "Please enter coordinate of x and y do you want to select: " << endl;
-        cout << "X - From " << 1 << " to " << MAX_HEIGHT << endl;
-        cout << "Y - From " << 1 << " to " << MAX_WIDTH << endl; 
     }
     if(text == TEXT_SHOW_OUTTRO)
     {
         cout << "Have a nice day! See you again" << endl << "#From_pknguyendev_with_love" << endl << endl;
     }
-    if(text == TEXT_SELECT_DIFFICULTY)
+    if(text == TEXT_GET_PLAYER_MAP_SIZE)
     {
-        cout << "Select level you want to play [1/2/3]?" << endl;
-        cout << "1. Easy Mode" << endl;
-        cout << "2. Medium Mode" << endl;
-        cout << "3. Extreme Mode" << endl;
+        cout << "Please enter m, n, k" << endl << "m is width" << endl << "n is height" << endl << "k is the number of Mine" << endl;
     }
     if(text == TEXT_GAME_OVER)
     {
@@ -141,27 +125,27 @@ void ShowInstruction()
     ShowText(TEXT_SHOW_INSTRUCTION);
 }
 
-void PlayMinesweeper(char** realMap, char** shownMap)
+void PlayMinesweeper(char** realMap, char** shownMap, int mapHeight, int mapWidth, int maxMove)
 {
     // visited is a matrix to check init data from user: Not alow to input an index has been inputted before
-    int** visited = new int*[MAX_HEIGHT];
-    for(int i = 0; i < MAX_HEIGHT; i++)
-            visited[i] = new int[MAX_WIDTH];
+    int** visited = new int*[mapHeight];
+    for(int i = 0; i < mapHeight; i++)
+            visited[i] = new int[mapWidth];
     
-    for(int i = 0; i < MAX_HEIGHT; i++)
-        for(int j = 0; j < MAX_WIDTH; j++)
+    for(int i = 0; i < mapHeight; i++)
+        for(int j = 0; j < mapWidth; j++)
             visited[i][j] = 0;
             
     int playerMove = 0;
     bool isQuit = false;
     while(isQuit == false)
     {
-        ShowMap(shownMap);
-        playerIndex = GetPlayerIndex(visited);
+        ShowMap(shownMap,mapHeight,mapWidth);
+        playerIndex = GetPlayerIndex(visited, mapHeight, mapWidth);
         if(realMap[playerIndex.x][playerIndex.y] == '*')
         {
             ShowText(TEXT_GAME_OVER);
-            ShowMap(realMap);
+            ShowMap(realMap,mapHeight,mapWidth);
             cout << endl;
             isQuit = true;
         }
@@ -170,10 +154,10 @@ void PlayMinesweeper(char** realMap, char** shownMap)
             realMap[playerIndex.x][playerIndex.y] = '1';
             shownMap[playerIndex.x][playerIndex.y] = '1';
             playerMove++;
-            if(playerMove == MAX_MOVE)
+            if(playerMove == maxMove)
             {
                 ShowText(TEXT_WIN);
-                ShowMap(realMap);
+                ShowMap(realMap,mapHeight,mapWidth);
                 cout << endl;
                 isQuit = true;
             }
@@ -181,71 +165,53 @@ void PlayMinesweeper(char** realMap, char** shownMap)
     }
 }
 
-void SelectDifficulty()
+void GetPlayerMapOption(int& mapHeight, int& mapWidth, int& mines)
 {
     int playerSelection;
     do
     {
-        ShowText(TEXT_SELECT_DIFFICULTY);
-        cin >> playerSelection;
-    } while (CheckPlayerLevelSelection(playerSelection) == false);
+        ShowText(TEXT_GET_PLAYER_MAP_SIZE);
+        cout << "m: ";
+        cin >> mapHeight;
+        cout << "n: ";
+        cin  >> mapWidth;
+        cout << "k: ";
+        cin >> mines;
+        cout << endl;
+    } while (CheckPlayerLevelSelection(mapHeight, mapWidth, mines) == false);
     
-    SetDifficulty(playerSelection);
 }
 
-bool CheckPlayerLevelSelection(int playerSelection)
+bool CheckPlayerLevelSelection(int mapHeight, int mapWidth, int mines)
 {
-    return playerSelection >= 1 && playerSelection <= MAX_LEVEL;
+    if(int(mapWidth) == mapWidth && int(mapHeight) == mapHeight && int(mines) == mines)
+        return true;
+    return false;
 }
 
-void SetDifficulty(int playerSelection)
+char** GenerateMap(int mapHeight, int mapWidth, int mines)
 {
-    if(playerSelection == EASY_MODE)
-    {
-        MAX_HEIGHT = EASY_MODE_HEIGHT;
-        MAX_WIDTH = EASY_MODE_WIDTH;
-        MINES = EASY_MODE_MINES;
-        MAX_MOVE = (MAX_WIDTH*MAX_HEIGHT)-MINES;
-    }
-    if(playerSelection == MEDIUM_MODE)
-    {
-        MAX_HEIGHT = MEDIUM_MODE_HEIGHT;
-        MAX_WIDTH = MEDIUM_MODE_WIDTH;
-        MINES = MEDIUM_MODE_MINES;
-        MAX_MOVE = (MAX_WIDTH*MAX_HEIGHT)-MINES;
-    }
-    if(playerSelection == EXTREME_MODE)
-    {
-        MAX_HEIGHT = EXTREME_MODE_HEIGHT;
-        MAX_WIDTH = EXTREME_MODE_WIDTH;
-        MINES = EXTREME_MODE_MINES;
-        MAX_MOVE = (MAX_WIDTH*MAX_HEIGHT)-MINES;
-    }
-}
-
-char** GenerateMap()
-{
-    char** tmpMap = new char*[MAX_HEIGHT];
-    for(int i = 0; i < MAX_HEIGHT; i++)
-        tmpMap[i] = new char[MAX_WIDTH];
-    for(int i = 0; i < MAX_HEIGHT; i++)
-        for(int j = 0; j < MAX_WIDTH; j++)
+    char** tmpMap = new char*[mapHeight];
+    for(int i = 0; i < mapHeight; i++)
+        tmpMap[i] = new char[mapWidth];
+    for(int i = 0; i < mapHeight; i++)
+        for(int j = 0; j < mapWidth; j++)
             tmpMap[i][j] = '0';
     return tmpMap;
 }
 
 // Set random mines in map
-void SetMap(char** tmpMap)
+void SetMap(char** tmpMap, int mapHeight, int mapWidth, int mines)
 {
-    bool mark[MAX_HEIGHT*MAX_WIDTH];
+    bool mark[mapHeight*mapWidth];
     memset(mark,false,sizeof(mark));
     int i = 0;
     srand(time(NULL));
-    while(i < MINES)
+    while(i < mines)
     {
-        int random = rand()%(MAX_HEIGHT*MAX_WIDTH);
-        int x = random/MAX_WIDTH;
-        int y = random%MAX_HEIGHT;
+        int random = rand()%(mapHeight*mapWidth);
+        int x = random/mapWidth;
+        int y = random%mapHeight;
         if (mark[random] == false)
         {
             tmpMap[x][y] = '*';
@@ -255,18 +221,18 @@ void SetMap(char** tmpMap)
     }
 }
 
-void ShowMap(char** MapTmp)
+void ShowMap(char** MapTmp, int mapHeight, int mapWidth)
 {
     ShowText(TEXT_SHOW_MAP);
-    for(int i = 0; i < MAX_HEIGHT; i++)
+    for(int i = 0; i < mapHeight; i++)
     {
-        for(int j = 0; j < MAX_WIDTH; j++)
+        for(int j = 0; j < mapWidth; j++)
             cout << MapTmp[i][j] << " ";
         cout << endl;
     }
 }
 
-Index GetPlayerIndex(int** visited)
+Index GetPlayerIndex(int** visited, int mapHeight, int mapWidth)
 {
     Index tmpPlayerIndex;
     do
@@ -279,15 +245,25 @@ Index GetPlayerIndex(int** visited)
         cout << endl; 
         tmpPlayerIndex.x--;
         tmpPlayerIndex.y--;
-    } while (InsideMap(tmpPlayerIndex.x, tmpPlayerIndex.y) == false);
+    } while (checkPlayerIndex(tmpPlayerIndex.x, tmpPlayerIndex.y, mapHeight, mapWidth, visited) == 0);
     
     system("CLS");
     return tmpPlayerIndex;
 }
 
-bool InsideMap(int indexX, int indexY)
+bool checkPlayerIndex(int playerIndexX, int playerIndexY, int mapHeight, int mapWidth, int** visited)
 {
-    return indexX >= 0 && indexX < MAX_HEIGHT && indexY >= 0 && indexY < MAX_WIDTH;
+    if(InsideMap(playerIndexX, playerIndexY, mapHeight, mapWidth) == 0)
+        return false;
+    if(visited[playerIndexX][playerIndexY] == 0)
+        visited[playerIndexX][playerIndexY] = 1;
+    else
+        return false;
+    return true;
+}
+bool InsideMap(int indexX, int indexY, int mapHeight, int mapWidth)
+{
+    return indexX >= 0 && indexX < mapHeight && indexY >= 0 && indexY < mapWidth;
 }
 
 void ShowOuttro()
