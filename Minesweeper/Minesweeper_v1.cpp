@@ -97,13 +97,12 @@ void ShowText(int text)
     if(text == TEXT_GET_PLAYER_INDEX)
     {
         cout << "Please enter coordinate of x and y do you want to select: " << endl;
-        cout << "X - from " << 1 << " to " << MAX_HEIGHT << endl;
-        cout << "Y - from " << 1 << " to " << MAX_WIDTH << endl; 
+        cout << "X - From " << 1 << " to " << MAX_HEIGHT << endl;
+        cout << "Y - From " << 1 << " to " << MAX_WIDTH << endl; 
     }
     if(text == TEXT_SHOW_OUTTRO)
     {
-        cout << "Have a nice day! See you again" << endl << "#From_pknguyendev_with_love";
-        cout << endl;
+        cout << "Have a nice day! See you again" << endl << "#From_pknguyendev_with_love" << endl << endl;
     }
     if(text == TEXT_SELECT_DIFFICULTY)
     {
