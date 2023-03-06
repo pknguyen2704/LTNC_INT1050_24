@@ -29,7 +29,7 @@ using namespace std;
 
 #define EXTREME_MODE_HEIGHT 20
 #define EXTREME_MODE_WIDTH 25
-#define EXTREME_MODE_MINES 200
+#define EXTREME_MODE_MINES 50
 
 
 int MAX_WIDTH = EXTREME_MODE_WIDTH;
@@ -53,7 +53,7 @@ void SetDifficulty(int playerSelection);
 char** GenerateMap();
 void SetMap(char** Map);
 Index GetPlayerIndex(int** visited);
-void PlayMinesweeper(char** realMap, char** showMap);
+void PlayMinesweeper(char** realMap, char** shownMap);
 void ShowMap(char** Map);
 bool InsideMap(int indexX, int indexY);
 void ShowOuttro();
@@ -64,16 +64,16 @@ int main()
     {
         //Clean screen to start a new game
         system("CLS");
-        
+
         ShowInstruction();
         SelectDifficulty();
 
         char** realMap = GenerateMap();
-        char** showMap = GenerateMap();
+        char** shownMap = GenerateMap();
         SetMap(realMap);
-        //ShowMap to check Map (only for Developer) =)))
-        //ShowMap(realMap);
-        PlayMinesweeper(realMap, showMap);
+        //shownMap to check Map (only for Developer) =)))
+        //shownMap(realMap);
+        PlayMinesweeper(realMap, shownMap);
     }while(ReplayOption() == true);
     ShowOuttro();
     return 0;
@@ -95,7 +95,11 @@ void ShowText(int text)
         cout << "______________" << endl;
     }
     if(text == TEXT_GET_PLAYER_INDEX)
-        cout << "Please enter coordinate of x and y do you want to select:" << endl;
+    {
+        cout << "Please enter coordinate of x and y do you want to select: " << endl;
+        cout << "X - from " << 1 << " to " << MAX_HEIGHT << endl;
+        cout << "Y - from " << 1 << " to " << MAX_WIDTH << endl; 
+    }
     if(text == TEXT_SHOW_OUTTRO)
     {
         cout << "Have a nice day! See you again" << endl << "#From_pknguyendev_with_love";
@@ -138,7 +142,7 @@ void ShowInstruction()
     ShowText(TEXT_SHOW_INSTRUCTION);
 }
 
-void PlayMinesweeper(char** realMap, char** showMap)
+void PlayMinesweeper(char** realMap, char** shownMap)
 {
     // visited is a matrix to check init data from user: Not alow to input an index has been inputted before
     int** visited = new int*[MAX_HEIGHT];
@@ -153,6 +157,7 @@ void PlayMinesweeper(char** realMap, char** showMap)
     bool isQuit = false;
     while(isQuit == false)
     {
+        ShowMap(shownMap);
         playerIndex = GetPlayerIndex(visited);
         if(realMap[playerIndex.x][playerIndex.y] == '*')
         {
@@ -164,7 +169,7 @@ void PlayMinesweeper(char** realMap, char** showMap)
         else
         {
             realMap[playerIndex.x][playerIndex.y] = '1';
-            showMap[playerIndex.x][playerIndex.y] = '1';
+            shownMap[playerIndex.x][playerIndex.y] = '1';
             playerMove++;
             if(playerMove == MAX_MOVE)
             {
@@ -173,8 +178,6 @@ void PlayMinesweeper(char** realMap, char** showMap)
                 cout << endl;
                 isQuit = true;
             }
-            else
-                ShowMap(showMap);
         }
     }
 }
@@ -242,8 +245,8 @@ void SetMap(char** tmpMap)
     while(i < MINES)
     {
         int random = rand()%(MAX_HEIGHT*MAX_WIDTH);
-        int x = random/MAX_HEIGHT;
-        int y = random%MAX_WIDTH;
+        int x = random/MAX_WIDTH;
+        int y = random%MAX_HEIGHT;
         if (mark[random] == false)
         {
             tmpMap[x][y] = '*';
@@ -279,6 +282,7 @@ Index GetPlayerIndex(int** visited)
         tmpPlayerIndex.y--;
     } while (InsideMap(tmpPlayerIndex.x, tmpPlayerIndex.y) == false);
     
+    system("CLS");
     return tmpPlayerIndex;
 }
 
