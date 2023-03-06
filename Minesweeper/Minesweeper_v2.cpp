@@ -20,6 +20,10 @@ using namespace std;
 #define MAX_MAP_WIDTH 10000
 #define MAX_MINES 10000
 
+#define DIRECTION 8
+const int dx[DIRECTION] = {-1,-1,0,1,1,1,0,-1};
+const int dy[DIRECTION] = {0,1,1,1,0,-1,-1,-1};
+
 struct Index
 {
     int x;
@@ -42,7 +46,7 @@ bool CheckPlayerMapSize(double mapHeight, double mapWidth, double mines);
 char** GenerateMap(int mapHeight, int mapWidth, int mines);
 
 void SetMap(char** tmpMap, int mapHeight, int mapWidth, int mines);
-
+char CountMinesSurround(char** tmpMap, int x, int , int mapHeight, int mapWidth);
 Index GetPlayerIndex(int** visited, int mapHeight, int mapWidth);
 
 void PlayMinesweeper(char** realMap, char** maskMap, int mapHeight, int mapWidth, int maxMove);
@@ -73,6 +77,9 @@ int main()
         char** realMap = GenerateMap(mapHeight, mapWidth, mines);
         char** maskMap = GenerateMap(mapHeight, mapWidth, mines);
         SetMap(realMap, mapHeight, mapWidth, mines);
+
+        //ShowMap(realMap, m, n) to check Map (only for Developer) =)))
+        //ShowMap(realMap, mapHeight, mapWidth);
         PlayMinesweeper(realMap, maskMap, mapHeight, mapWidth, maxMove);
     }while(ReplaySelection() == true);
     system("CLS");
@@ -163,14 +170,28 @@ void PlayMinesweeper(char** realMap, char** maskMap, int mapHeight, int mapWidth
         {
             ShowText(TEXT_GAME_OVER);
             ShowMap(realMap,mapHeight,mapWidth);
+
             cout << endl;
             isQuit = true;
         }
         else
         {
-            realMap[playerIndex.x][playerIndex.y] = '1';
-            maskMap[playerIndex.x][playerIndex.y] = '1';
+            maskMap[playerIndex.x][playerIndex.y] = realMap[playerIndex.x][playerIndex.y];
             playerMove++;
+            if(realMap[playerIndex.x][playerIndex.y] == '0')
+            {
+                for(int k = 0; k < DIRECTION; k++)
+                {
+                    int u = playerIndex.x + dx[k];
+                    int v = playerIndex.y + dy[k];
+                    if(InsideMap(u, v, mapHeight, mapWidth) == 1 && visited[u][v] == 0)
+                    {
+                        maskMap[u][v] = realMap[u][v];
+                        visited[u][v] = 1;
+                        playerMove++;
+                    }
+                }
+            }
             if(playerMove == maxMove)
             {
                 ShowText(TEXT_WIN);
@@ -215,7 +236,7 @@ char** GenerateMap(int mapHeight, int mapWidth, int mines)
         tmpMap[i] = new char[mapWidth];
     for(int i = 0; i < mapHeight; i++)
         for(int j = 0; j < mapWidth; j++)
-            tmpMap[i][j] = '0';
+            tmpMap[i][j] = 'o';
     return tmpMap;
 }
 
@@ -235,8 +256,31 @@ void SetMap(char** tmpMap, int mapHeight, int mapWidth, int mines)
         }
     }
     cout << endl;
+    for(int i = 0; i < mapHeight; i++)
+    {
+        for(int j = 0; j < mapWidth; j++)
+        {
+            if(tmpMap[i][j] == 'o')
+            {
+                tmpMap[i][j] = CountMinesSurround(tmpMap, i, j, mapHeight, mapWidth);
+            }
+        }
+    }
 }
-
+char CountMinesSurround(char** tmpMap, int x, int y, int mapHeight, int mapWidth)
+{
+    int countMines = 0;
+    for(int k = 0; k < DIRECTION; k++)
+    {
+        int u = x + dx[k];
+        int v = y + dy[k];
+        if(InsideMap(u, v, mapHeight, mapWidth) == 1 && tmpMap[u][v] == '*')
+        {
+            countMines++;
+        }
+    }
+    return char(countMines+48);
+}
 void ShowMap(char** MapTmp, int mapHeight, int mapWidth)
 {
     ShowText(TEXT_SHOW_MAP);
